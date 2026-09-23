@@ -5,7 +5,7 @@ const { Server } = require('socket.io');
 const { io: connect } = require('socket.io-client');
 const { createApp } = require('../src/app');
 const { registerGameSocket } = require('../src/socket/game.socket');
-const { createTestService } = require('./helpers/fixtures');
+const { createTestService, solutionBox } = require('./helpers/fixtures');
 
 const waitFor = (socket, event) => new Promise((resolve) => socket.once(event, resolve));
 
@@ -53,16 +53,16 @@ describe('Socket.IO', () => {
 
     const rect = ctx.repository.raw(gameId).rectangles[0];
     const selectedOnB = waitFor(b, 'rectangle:selected');
-    await a.emitWithAck('rectangle:select', { gameId, rectangleId: rect.id });
-    expect((await selectedOnB).rectangleId).toBe(rect.id);
+    await a.emitWithAck('rectangle:select', { gameId, row: rect.solution.row, col: rect.solution.col });
+    expect((await selectedOnB).selection).toEqual({ row: rect.solution.row, col: rect.solution.col });
 
     const movedOnB = waitFor(b, 'rectangle:moved');
     const lockedOnB = waitFor(b, 'rectangle:locked');
     const updatedOnB = waitFor(b, 'game:updated');
-    const ack = await a.emitWithAck('rectangle:place', { gameId, rectangleId: rect.id, row: rect.solution.row, col: rect.solution.col });
+    const ack = await a.emitWithAck('rectangle:place', { gameId, ...solutionBox(rect) });
     expect(ack.success).toBe(true);
-    expect((await movedOnB).accepted).toBe(true);
-    expect((await lockedOnB).rectangleId).toBe(rect.id);
+    expect((await movedOnB).placement.accepted).toBe(true);
+    expect((await lockedOnB).rectangle.id).toBe(rect.id);
     const updated = await updatedOnB;
     expect(updated.game.rectangles.find((r) => r.id === rect.id).locked).toBe(true);
     expect(JSON.stringify(updated)).not.toMatch(/solution|clueId/);
@@ -92,14 +92,10 @@ describe('Socket.IO', () => {
     const socket = await client();
     await socket.emitWithAck('game:join', { gameId });
     await socket.emitWithAck('game:start', { gameId });
-    const raw = ctx.repository.raw(gameId);
-    const big = raw.rectangles.find((r) => r.width > 1) || raw.rectangles[0];
     const moved = waitFor(socket, 'rectangle:moved');
-    const ack = await socket.emitWithAck('rectangle:place', { gameId, rectangleId: big.id, row: 0, col: raw.columns - 1 });
-    if (big.width > 1) {
-      expect(ack).toMatchObject({ success: false, error: { code: 'RECTANGLE_OUT_OF_BOARD' } });
-      expect((await moved).accepted).toBe(false);
-    }
+    const ack = await socket.emitWithAck('rectangle:place', { gameId, row: 0, col: game.columns - 1, width: 2, height: 1 });
+    expect(ack).toMatchObject({ success: false, error: { code: 'RECTANGLE_OUT_OF_BOARD' } });
+    expect((await moved).placement.accepted).toBe(false);
   });
 
   test('winning broadcasts game:won to the room', async () => {
@@ -110,7 +106,7 @@ describe('Socket.IO', () => {
     await socket.emitWithAck('game:start', { gameId });
     const won = waitFor(socket, 'game:won');
     for (const rect of ctx.repository.raw(gameId).rectangles) {
-      await socket.emitWithAck('rectangle:place', { gameId, rectangleId: rect.id, row: rect.solution.row, col: rect.solution.col });
+      await socket.emitWithAck('rectangle:place', { gameId, ...solutionBox(rect) });
     }
     const payload = await won;
     expect(payload.game.status).toBe('completed');

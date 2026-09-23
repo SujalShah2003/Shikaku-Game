@@ -71,7 +71,7 @@ function puzzleKey(game) {
 }
 
 function renderAll() {
-  ui.render(state, { activeId: drag.getActiveId(), dragging: drag.isDragging(), playable: isPlayable() });
+  ui.render(state, { drawing: drawing.isDrawing() });
 }
 
 /** Applies a server snapshot, ignoring stale ones that arrive out of order. */
@@ -81,7 +81,7 @@ function applyState(game) {
   state = game;
   syncTimer(game.timer);
   renderAll();
-  drag.sync();
+  drawing.sync();
 
   const key = puzzleKey(game);
   if (game.status === 'completed' && !celebrated.has(key)) {
@@ -117,14 +117,14 @@ const actions = {
   async pause() {
     reportError(await send('timer:stop', {}, { path: gamePath('/timer/stop') }));
   },
-  async select(rect) {
-    const response = await send('rectangle:select', { rectangleId: rect.id }, { path: gamePath('/rectangles/select') });
+  async select(cell) {
+    const response = await send('rectangle:select', { row: cell.row, col: cell.col }, { path: gamePath('/rectangles/select') });
     reportError(response);
   },
-  async place(rect, pos) {
+  async place(box) {
     const response = await send(
       'rectangle:place',
-      { rectangleId: rect.id, row: pos.row, col: pos.col },
+      { row: box.row, col: box.col, width: box.width, height: box.height },
       { path: gamePath('/rectangles/place') },
     );
     if (!response.success) {
@@ -146,22 +146,21 @@ const actions = {
   },
 };
 
-/* ---------- Drag & drop ---------- */
+/* ---------- Drawing rectangles on the grid ---------- */
 
-const drag = createDragDrop({
+const drawing = createDragDrop({
   board: ui.els.board,
   layer: ui.els.layer,
-  tray: ui.els.tray,
   getState: () => state,
+  limits: config.limits,
   isPlayable,
-  onSelect: (rect) => actions.select(rect),
-  onPlace: (rect, pos) => actions.place(rect, pos),
+  onSelect: (cell) => actions.select(cell),
+  onPlace: (box) => actions.place(box),
   onBlocked: () => {
     if (!state) return;
     const message = state.status === 'completed' ? 'Puzzle solved! Start a new one to keep playing.' : state.status === 'created' ? 'Press Start to begin the puzzle.' : 'The game is paused — resume to keep playing.';
     ui.toast(message, 'info');
   },
-  onChange: () => state && ui.renderTray(state, { activeId: drag.getActiveId(), dragging: drag.isDragging(), playable: isPlayable() }),
   setHint: ui.setHint,
 });
 
@@ -183,7 +182,7 @@ const socketClient = createSocketClient({
     'rectangle:locked': ({ game }) => applyState(game),
     'game:won': ({ game }) => applyState(game),
     'game:reset': ({ game }) => {
-      drag.cancel({ silent: true });
+      drawing.cancel({ silent: true });
       ui.hideWin();
       applyState(game);
       ui.toast(`New ${capitalize(game.difficulty)} puzzle generated.`, 'info');

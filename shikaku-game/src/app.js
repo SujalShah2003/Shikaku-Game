@@ -32,6 +32,8 @@ function publicClientConfig() {
       maxRows: GAME_CONFIG.maxRows,
       minColumns: GAME_CONFIG.minColumns,
       maxColumns: GAME_CONFIG.maxColumns,
+      maxRectangleWidth: GAME_CONFIG.maxRectangleWidth,
+      maxRectangleHeight: GAME_CONFIG.maxRectangleHeight,
     },
     difficulties: DIFFICULTIES.map((key) => ({
       key,

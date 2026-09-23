@@ -35,8 +35,8 @@ function createGameController(gameService) {
 
     async select(req, res) {
       const gameId = gameIdOf(req);
-      const { rectangleId } = validate(selectRectangleSchema, req.body);
-      sendSuccess(res, await gameService.selectRectangle(gameId, rectangleId));
+      const cell = validate(selectRectangleSchema, req.body);
+      sendSuccess(res, await gameService.selectRectangle(gameId, cell));
     },
 
     async place(req, res) {

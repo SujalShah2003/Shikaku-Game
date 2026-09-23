@@ -67,69 +67,54 @@ describe('rectangle.service — geometry helpers', () => {
   });
 });
 
-describe('rectangle.service — validatePlacement', () => {
-  test('valid placement accepted', () => {
+describe('rectangle.service — validatePlacement (drawn boxes)', () => {
+  const box = (row, col, width, height) => ({ row, col, width, height });
+
+  test('valid placement accepted and matched to its solution rectangle', () => {
     const game = buildGame();
-    const verdict = rectangleService.validatePlacement(game, game.rectangles[0], { row: 0, col: 0 });
+    const verdict = rectangleService.validatePlacement(game, box(0, 0, 2, 1));
     expect(verdict.valid).toBe(true);
-    expect(verdict.match).toBe(game.rectangles[0]);
+    expect(verdict.rectangle.id).toBe('rect-a');
   });
 
-  test('invalid placement rejected (no clue / wrong area / wrong slot)', () => {
+  test('invalid placement rejected (wrong area / no clue / two clues)', () => {
     const game = buildGame();
-    const [a, b, c] = game.rectangles;
-    // b (1×3) at column 0 covers clue-c (value 4): wrong area.
-    expect(rectangleService.validatePlacement(game, b, { row: 0, col: 0 })).toMatchObject({ valid: false, code: 'INVALID_PLACEMENT' });
-    // a (2×1) at (2,0) covers no clue.
-    expect(rectangleService.validatePlacement(game, a, { row: 2, col: 0 })).toMatchObject({ valid: false, code: 'INVALID_PLACEMENT' });
-    // c (2×2) at (0,0) covers two clues.
-    expect(rectangleService.validatePlacement(game, c, { row: 0, col: 0 })).toMatchObject({ valid: false, code: 'INVALID_PLACEMENT' });
+    // 1×3 down column 0 covers clue-c (value 4): wrong area.
+    expect(rectangleService.validatePlacement(game, box(0, 0, 1, 3))).toMatchObject({ valid: false, code: 'INVALID_PLACEMENT' });
+    // 2×1 on the bottom row covers no clue.
+    expect(rectangleService.validatePlacement(game, box(2, 0, 2, 1))).toMatchObject({ valid: false, code: 'INVALID_PLACEMENT' });
+    // 2×2 in the corner covers two clues.
+    expect(rectangleService.validatePlacement(game, box(0, 0, 2, 2))).toMatchObject({ valid: false, code: 'INVALID_PLACEMENT' });
   });
 
-  test('rule-valid placement that is not the solution is rejected', () => {
-    const game = buildGame();
-    const [a] = game.rectangles;
-    // a (2×1) at (0,1) covers only clue-a (value 2) — fits the clue but breaks the partition.
-    const verdict = rectangleService.validatePlacement(game, a, { row: 0, col: 1 });
+  test('rule-valid box that is not in the solution is rejected', () => {
+    // 2×1 at (0,1) covers only clue-a (value 2) — fits the clue but breaks the partition.
+    expect(rectangleService.validatePlacement(buildGame(), box(0, 1, 2, 1))).toMatchObject({ valid: false, code: 'INVALID_PLACEMENT' });
+  });
+
+  test('box larger than the configured maximum is rejected', () => {
+    const game = { rows: 1, columns: 4, clues: [{ id: 'c', row: 0, col: 0, value: 4 }], rectangles: [] };
+    const verdict = rectangleService.validatePlacement(game, box(0, 0, 4, 1));
     expect(verdict).toMatchObject({ valid: false, code: 'INVALID_PLACEMENT' });
+    expect(verdict.message).toMatch(/at most 3 wide/);
   });
 
   test('out-of-board placement rejected', () => {
     const game = buildGame();
-    const [, b] = game.rectangles;
-    expect(rectangleService.validatePlacement(game, b, { row: 1, col: 2 })).toMatchObject({ valid: false, code: 'RECTANGLE_OUT_OF_BOARD' });
-    expect(rectangleService.validatePlacement(game, b, { row: 5, col: 0 })).toMatchObject({ valid: false, code: 'INVALID_POSITION' });
+    expect(rectangleService.validatePlacement(game, box(1, 2, 1, 3))).toMatchObject({ valid: false, code: 'RECTANGLE_OUT_OF_BOARD' });
+    expect(rectangleService.validatePlacement(game, box(5, 0, 1, 1))).toMatchObject({ valid: false, code: 'INVALID_POSITION' });
   });
 
   test('overlapping placement rejected', () => {
     const game = buildGame();
-    const [a, , c] = game.rectangles;
-    rectangleService.lockRectangle(c, { row: 1, col: 0 });
-    // a (2×1) at (1,0) would sit on top of locked c.
-    expect(rectangleService.validatePlacement(game, a, { row: 1, col: 0 })).toMatchObject({ valid: false, code: 'RECTANGLE_OVERLAP' });
+    rectangleService.lockRectangle(game.rectangles[2], { row: 1, col: 0 }); // lock c
+    expect(rectangleService.validatePlacement(game, box(1, 0, 2, 1))).toMatchObject({ valid: false, code: 'RECTANGLE_OVERLAP' });
   });
 
-  test('identical rectangles are interchangeable and swap solution slots', () => {
-    const game = {
-      rows: 1,
-      columns: 4,
-      clues: [
-        { id: 'clue-1', row: 0, col: 0, value: 2 },
-        { id: 'clue-2', row: 0, col: 3, value: 2 },
-      ],
-      rectangles: [
-        { id: 'rect-1', width: 2, height: 1, area: 2, clueId: 'clue-1', solution: { row: 0, col: 0, width: 2, height: 1 }, status: 'available', locked: false },
-        { id: 'rect-2', width: 2, height: 1, area: 2, clueId: 'clue-2', solution: { row: 0, col: 2, width: 2, height: 1 }, status: 'available', locked: false },
-      ],
-    };
-    const [first, second] = game.rectangles;
-    const verdict = rectangleService.validatePlacement(game, first, { row: 0, col: 2 });
-    expect(verdict.valid).toBe(true);
-    expect(verdict.match).toBe(second);
-    rectangleService.lockRectangle(first, { row: 0, col: 2 }, verdict.match);
-    expect(first.solution).toMatchObject({ row: 0, col: 2 });
-    expect(second.solution).toMatchObject({ row: 0, col: 0 });
-    expect(first.clueId).toBe('clue-2');
+  test('a locked rectangle is never matched again', () => {
+    const game = buildGame();
+    rectangleService.lockRectangle(game.rectangles[0], { row: 0, col: 0 });
+    expect(rectangleService.findRectangleForBox(game.rectangles, box(0, 0, 2, 1))).toBeNull();
   });
 });
 

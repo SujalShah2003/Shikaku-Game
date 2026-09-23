@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#22e4ff"/><stop offset="1" stop-color="#c14bff"/>
+      <stop stop-color="#0ea5c6"/><stop offset="1" stop-color="#7c5cf2"/>
     </linearGradient>
   </defs>
-  <rect x="1.5" y="1.5" width="37" height="37" rx="10" fill="#0d1230" stroke="url(#g)" stroke-width="2"/>
-  <rect x="8" y="8" width="14" height="9" rx="2.5" fill="#22e4ff" fill-opacity=".85"/>
-  <rect x="24" y="8" width="8" height="24" rx="2.5" fill="#c14bff" fill-opacity=".85"/>
-  <rect x="8" y="19" width="14" height="13" rx="2.5" fill="#6b7cff" fill-opacity=".85"/>
+  <rect x="1.5" y="1.5" width="37" height="37" rx="10" fill="#ffffff" stroke="url(#g)" stroke-width="2"/>
+  <rect x="8" y="8" width="14" height="9" rx="2.5" fill="#0ea5c6" fill-opacity=".85"/>
+  <rect x="24" y="8" width="8" height="24" rx="2.5" fill="#7c5cf2" fill-opacity=".85"/>
+  <rect x="8" y="19" width="14" height="13" rx="2.5" fill="#e0569b" fill-opacity=".8"/>
 </svg>

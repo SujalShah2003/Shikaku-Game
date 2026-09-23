@@ -157,6 +157,7 @@ module.exports = {
   isInsideBoard,
   boxesOverlap,
   hasOverlap,
+  cellInBox,
   getCluesInside,
   containsClue,
   hasCorrectArea,

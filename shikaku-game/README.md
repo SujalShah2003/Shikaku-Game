@@ -1,7 +1,8 @@
 # Shikaku — Real-time Grid Puzzle
 
 A complete, playable **Shikaku** puzzle game built with Node.js, Express, Socket.IO, MongoDB and EJS.
-Players split a grid into rectangles by dragging pieces onto the board. Every placement is checked
+Players split a grid into rectangles by drawing them directly on the board, like
+[puzzle-shikaku.com](https://www.puzzle-shikaku.com/). Every rectangle is checked
 on the server, games are stored in MongoDB, and any number of browser windows can solve the same
 puzzle together in real time.
 
@@ -16,16 +17,19 @@ puzzle together in real time.
   and reset action is validated and persisted before any client is notified.
 - **Real-time multiplayer sync** through Socket.IO rooms (`game:{gameId}`). Share the link, and every
   window sees each move, lock, win and reset instantly. A presence counter shows how many players are viewing.
-- **Drag and drop with snap-to-grid.** A live preview turns cyan/✓ for a valid spot and red/striped/✕
-  for an invalid one, with a label saying why (for example "✕ 2 numbers" or "✕ Needs 4").
-- **Three input styles:** drag, click/tap-to-place, and full keyboard control.
+- **Draw rectangles on the grid.** Press on a cell and drag to the opposite corner. The rectangle
+  snaps to whole cells, and a live label shows its size and whether it fits: indigo/✓ when valid,
+  red/striped/✕ when not, with the reason (for example "2×1 · ✕ 2 numbers" or "✕ needs 4").
+- **Mouse, touch and keyboard.** Clicking an empty cell does nothing and doesn't count as a move.
+  On the keyboard, arrow keys move a cursor and <kbd>Enter</kbd> starts and places a rectangle.
+- **Teammate indicator.** While someone draws, the cell they started from pulses in every other window.
 - **Timer** based on `startedAt`/`endedAt` timestamps (no server intervals), with pause and resume.
 - Stats (time, rectangles, completion %, moves, difficulty), a progress bar, a completion modal with a
   subtle confetti burst, and toasts.
 - **Easy 5×5, Medium 7×7 and Hard 9×9** presets, or custom sizes from 3×3 to 10×10 through the API.
 - REST and Socket.IO both call **the same service layer**. If the socket drops, the client falls back to REST.
 - Zod validation, a central error catalogue, Pino structured logging, Helmet with CSP, and CORS configured from environment variables.
-- A responsive "Modern Neon Puzzle Lab" UI that handles keyboard use, respects reduced-motion settings and uses ARIA labels.
+- A responsive light-theme UI (glass cards, soft shadows, pastel rectangles) that handles keyboard use, respects reduced-motion settings and uses ARIA labels.
 - 73 Jest tests covering the generator, rules, win detection, timer, game service, REST API and Socket.IO sync.
 
 ## Tech Stack
@@ -74,8 +78,9 @@ Key decisions:
   other, and no game state is held in memory.
 - **Dependency injection.** `createGameService({ repository, clock, rng })` and `createApp({ gameService })`
   let the tests use an in-memory repository and a controllable clock.
-- **Public projection.** `toPublicGame()` is the only shape that leaves the server. It removes
-  `solution` and `clueId`, and exposes `currentPosition` only for locked rectangles. As a second
+- **Public projection.** `toPublicGame()` is the only shape that leaves the server. Only
+  **locked** rectangles are included, because unlocked ones would give away the solution's shapes.
+  It never includes `solution` or `clueId`. As a second
   safeguard, the Mongoose model's `toJSON` also strips them.
 
 ## Folder Structure
@@ -117,8 +122,9 @@ The board is a grid of cells, and some cells hold a number. Divide the whole gri
 2. that number equals the rectangle's **area** (a `4` can be 1×4, 2×2 or 4×1, within the size limits);
 3. rectangles never overlap, and together they cover **every** cell.
 
-In this game, the rectangle pieces are provided in the tray, as the assignment specifies. Correctly
-placed pieces lock in place. The puzzle is solved when every piece is locked.
+Draw a rectangle by pressing on one corner cell and dragging to the opposite corner. The server
+checks it immediately. Correct rectangles lock in place, and wrong ones are rejected with the reason.
+The puzzle is solved when the whole board is covered by locked rectangles.
 
 ## Puzzle Generation Algorithm
 
@@ -138,23 +144,29 @@ placed pieces lock in place. The puzzle is solved when every piece is locked.
    gets up to 3 clue layouts, with up to 150 attempts in total. In practice a unique 9×9 puzzle is
    found in about 8 attempts, in under 1 ms. If the budget ever runs out, the last *solvable*
    puzzle is used and flagged `uniqueSolution: false`.
-5. **Store and expose.** Each rectangle keeps its `solution` slot on the server. The tray order is
-   shuffled so that it reveals nothing about the layout. The client only receives clues and piece sizes.
+5. **Store and expose.** Each rectangle keeps its `solution` slot on the server. The client only
+   receives the clues, plus each rectangle once it has been correctly drawn and locked.
 
 ### Placement validation (`rectangle.service.js`)
 
-Checks run in this order: position on board → `isInsideBoard` → `hasOverlap` with locked rectangles →
-exactly one clue (`containsClue`) → `hasCorrectArea` → `isCorrectSolutionPosition`.
+A placement is the box the player drew: `{ row, col, width, height }`, where `row`/`col` is the
+top-left cell. Checks run in this order: position on board → `isInsideBoard` →
+`hasAllowedDimensions` (at most 3×3) → `hasOverlap` with locked rectangles → exactly one clue
+(`containsClue`) → `hasCorrectArea` → `findRectangleForBox`, which must find the unlocked solution
+rectangle that occupies exactly that box.
 
-Two design decisions (documented per the brief):
+Design decisions (documented per the brief):
 
-- **Identical pieces are interchangeable.** Dropping piece X (2×1) onto the solution slot of
-  another unlocked 2×1 piece Y is accepted, and the two pieces swap solution slots. Otherwise,
-  players would be told a correct placement is wrong just because they picked the "other" identical piece.
-- **Placements are compared to the solution.** Generated puzzles have a unique solution, so a
-  placement that fits its clue but is not in that solution can never be completed. Locked pieces
-  cannot be moved, so accepting such a placement would leave the puzzle unwinnable. It is rejected
-  with a clear message instead.
+- **Draw instead of drag pieces.** The brief described a tray of pieces. Classic Shikaku, and
+  the reference site, has players draw rectangles on the grid instead. The server-side model is
+  unchanged: the partition's rectangles are still stored, selected, placed and locked. They are
+  just hidden from the client until they are found.
+- **Drawn boxes are compared to the solution.** Generated puzzles have a unique solution, so a box
+  that fits its clue but is not in that solution can never be completed. Locked rectangles cannot
+  be moved, so accepting such a box would leave the puzzle unwinnable. It is rejected with a clear message instead.
+- **Selecting = starting to draw.** `rectangles/select` takes the cell where drawing started. It is
+  saved as `selectedRectangle`, the hidden rectangle under that cell becomes `selected`, and
+  teammates see the cell pulse.
 
 ### State machines
 
@@ -185,8 +197,8 @@ Base path `/api/games`. All responses use one of these two shapes:
 | GET    | `/api/games/:gameId`                  | –                                         | Public game state (no solutions) |
 | POST   | `/api/games/:gameId/generate`         | –                                         | Regenerates the puzzle; only allowed while `created` |
 | POST   | `/api/games/:gameId/start`            | –                                         | Starts the timer, or resumes if paused |
-| POST   | `/api/games/:gameId/rectangles/select`| `{ rectangleId }`                         | |
-| POST   | `/api/games/:gameId/rectangles/place` | `{ rectangleId, row, col }`               | `row`/`col` = top-left cell. Rejected placements → `422` with `error.details.game` |
+| POST   | `/api/games/:gameId/rectangles/select`| `{ row, col }`                            | Cell where drawing started. Locked cell → `409 RECTANGLE_ALREADY_LOCKED` |
+| POST   | `/api/games/:gameId/rectangles/place` | `{ row, col, width, height }`             | The drawn rectangle (top-left cell + size). Rejected → `422` with `error.details.game` |
 | POST   | `/api/games/:gameId/check`            | –                                         | `{ success, solved, message, elapsedSeconds, data }` |
 | POST   | `/api/games/:gameId/reset`            | `{ difficulty?, rows?, columns? }`        | New puzzle, new IDs, timer, moves and selection cleared |
 | POST   | `/api/games/:gameId/timer/stop`       | –                                         | `{ success, elapsedSeconds, data }` (pauses) |
@@ -218,8 +230,8 @@ receives the same `{ success, data | error }` shape as REST.
 | ------------------ | ------------------------------------- |
 | `game:join`        | `{ gameId }` → joins room `game:{gameId}` |
 | `game:start`       | `{ gameId }`                          |
-| `rectangle:select` | `{ gameId, rectangleId }`             |
-| `rectangle:place`  | `{ gameId, rectangleId, row, col }`   |
+| `rectangle:select` | `{ gameId, row, col }`                |
+| `rectangle:place`  | `{ gameId, row, col, width, height }` |
 | `game:check`       | `{ gameId }`                          |
 | `game:reset`       | `{ gameId, difficulty?, rows?, columns? }` |
 | `timer:stop`       | `{ gameId }`                          |
@@ -229,9 +241,9 @@ receives the same `{ success, data | error }` shape as REST.
 | `game:joined`        | To the joining socket, with the full public state |
 | `game:started`       | Game started or resumed |
 | `game:updated`       | After every persisted state change |
-| `rectangle:selected` | A piece was selected |
-| `rectangle:moved`    | A placement was attempted (`accepted: true/false`, `code`, `message`) |
-| `rectangle:locked`   | A placement was accepted and locked |
+| `rectangle:selected` | A player started drawing (`selection: { row, col }`) |
+| `rectangle:moved`    | A rectangle was drawn (`placement: { row, col, width, height, accepted, code?, message? }`) |
+| `rectangle:locked`   | A drawn rectangle was correct and is now locked (`rectangle`) |
 | `game:reset`         | A new puzzle was generated |
 | `game:won`           | Puzzle solved (`elapsedSeconds`, `moves`, `rectangles`) |
 | `timer:updated`      | Timer started, stopped, reset or finished |
@@ -256,7 +268,8 @@ have, so events arriving out of order cannot roll the board back.
     currentPosition: { row, col } | null,
     status, selected, locked
   }],
-  selectedRectangle, startedAt, endedAt, elapsedSeconds,
+  selectedRectangle: { row, col } | null,   // cell where drawing started
+  startedAt, endedAt, elapsedSeconds,
   puzzle: { uniqueSolution, generationAttempts, generatedAt },
   createdAt, updatedAt, __v                  // __v = optimistic-concurrency version
 }
@@ -316,8 +329,8 @@ npm test
 | Suite                         | Covers |
 | ----------------------------- | ------ |
 | `puzzle.service.test.js`      | full coverage, no overlaps, inside the board, valid dimensions, exactly one clue per rectangle, clue = area, unique solution, solver edge cases (168 generated puzzles) |
-| `rectangle.service.test.js`   | valid/invalid/out-of-board/overlapping placements, locked pieces can't move, swapping identical pieces, state transitions |
-| `validation.service.test.js`  | unsolved when incomplete, unsolved when a piece is misplaced, solved when correct, partition analysis |
+| `rectangle.service.test.js`   | valid/invalid/out-of-board/overlapping/oversized drawn boxes, locked rectangles can't be matched again, state transitions |
+| `validation.service.test.js`  | unsolved when incomplete, unsolved when a rectangle is misplaced, solved when correct, partition analysis |
 | `timer.service.test.js`       | timestamps, freezing on stop, excluding paused time, reset |
 | `game.service.test.js`        | creation, limits, no solution leak, select/place/lock, completion + `game:won`, timer, reset, concurrent placements |
 | `api.test.js`                 | every REST endpoint, error format, status codes, health, page rendering |
@@ -354,15 +367,16 @@ _Add screenshots here:_
 ## Known Limitations
 
 - No accounts. Anyone with the game link can play, and the game ID acts as the access token.
-- Pieces cannot be rotated. The tray shows each piece in the orientation it has in the solution.
-- A locked piece is final, as the brief requires, so there is no undo.
+- Each rectangle is checked as soon as it is drawn, which is stricter than the reference site.
+  There you can draw freely and only find out at the end.
+- A locked rectangle is final, as the brief requires, so there is no undo or erase.
 - Selection is shared between players, and there is no per-player cursor or ownership.
 - The client animates the timer between server snapshots, so on a very slow connection the display can lag by up to a second.
 - Old games are never deleted (no TTL index).
 
 ## Future Improvements
 
-- Piece rotation, and a "pencil" mode for unlocked, tentative placements
+- A free-draw "pencil" mode, like the reference site: draw and erase freely, and validate only at the end
 - Hints powered by the existing solver
 - Leaderboards and personal best times per difficulty
 - Player names, cursors and per-player colours in shared rooms

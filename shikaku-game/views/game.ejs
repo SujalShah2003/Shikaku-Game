@@ -45,16 +45,7 @@
           </div>
         </div>
 
-        <p class="hint" id="placement-hint" aria-live="polite">Drag a rectangle from the tray onto the board.</p>
-      </section>
-
-      <section class="tray-panel glass" aria-labelledby="tray-title">
-        <div class="panel-head">
-          <h2 id="tray-title" class="panel-title">Rectangles</h2>
-          <span class="muted mono" id="tray-count">0 left</span>
-        </div>
-        <div class="tray" id="tray" role="toolbar" aria-label="Available rectangles"></div>
-        <p class="tray-empty" id="tray-empty" hidden>All rectangles placed.</p>
+        <p class="hint" id="placement-hint" aria-live="polite">Press on a cell and drag to draw a rectangle.</p>
       </section>
 
       <section class="controls glass" aria-labelledby="controls-title">
@@ -80,12 +71,31 @@
 
         <details class="how-to">
           <summary>How to play</summary>
+
+          <h3>Goal</h3>
+          <p>Divide the whole grid into rectangles. Each number tells you the <strong>area</strong> of the rectangle that contains it.</p>
+
+          <h3>Rules</h3>
           <ul>
-            <li>Every number is the <strong>area</strong> of the rectangle that covers it.</li>
-            <li>Each rectangle covers <strong>exactly one</strong> number; together they fill the grid.</li>
-            <li><strong>Drag</strong> a piece onto the board — it snaps to the grid. Or click/tap a piece, then click a cell.</li>
-            <li>Keyboard: focus a piece, press <kbd>Enter</kbd>, move with the <kbd>arrow keys</kbd>, <kbd>Enter</kbd> to place, <kbd>Esc</kbd> to cancel.</li>
-            <li>Correct placements lock in place. Share the link to solve together in real time.</li>
+            <li>Every rectangle contains <strong>exactly one</strong> number.</li>
+            <li>Its area (width × height) equals that number: a <em>6</em> can be 2×3 or 3×2.</li>
+            <li>Rectangles are at most <strong>3×3</strong>, so a <em>4</em> must be 2×2 (1×4 is too long).</li>
+            <li>Rectangles never overlap, and together they cover <strong>every cell</strong>.</li>
+          </ul>
+
+          <h3>Controls</h3>
+          <ul>
+            <li><strong>Draw:</strong> press on a corner cell, drag to the opposite corner, and release. A label shows the size and whether it fits.</li>
+            <li><strong>Single cell:</strong> click a <em>1</em> to place a 1×1. Clicking an empty cell does nothing.</li>
+            <li><strong>Keyboard:</strong> focus the board, move with the <kbd>arrow keys</kbd>, press <kbd>Enter</kbd> to start, use the arrows to size it, <kbd>Enter</kbd> to place, <kbd>Esc</kbd> to cancel.</li>
+          </ul>
+
+          <h3>Good to know</h3>
+          <ul>
+            <li>Correct rectangles <strong>lock</strong> and can't be changed. Wrong ones are rejected with the reason.</li>
+            <li>Every rectangle you place counts as a move, right or wrong. Aim for as few as possible.</li>
+            <li><strong>Pause</strong> stops the timer and hides the board. <strong>Check</strong> tells you how far you are.</li>
+            <li><strong>Share</strong> copies a link, so friends can solve the same puzzle with you in real time.</li>
           </ul>
         </details>
       </section>

@@ -2,7 +2,7 @@
 
 const request = require('supertest');
 const { createApp } = require('../src/app');
-const { createTestService } = require('./helpers/fixtures');
+const { createTestService, solutionBox } = require('./helpers/fixtures');
 
 function setup() {
   const ctx = createTestService();
@@ -60,55 +60,53 @@ describe('REST API', () => {
     const gameId = await createAndStart(app);
     const raw = repository.raw(gameId);
     const [rect] = raw.rectangles;
+    const url = (suffix) => `/api/games/${gameId}${suffix}`;
 
-    const select = await request(app).post(`/api/games/${gameId}/rectangles/select`).send({ rectangleId: rect.id });
-    expect(select.body.data.selectedRectangle).toBe(rect.id);
+    const select = await request(app).post(url('/rectangles/select')).send({ row: rect.solution.row, col: rect.solution.col });
+    expect(select.body.data.selectedRectangle).toEqual({ row: rect.solution.row, col: rect.solution.col });
 
-    const outOfBoard = await request(app)
-      .post(`/api/games/${gameId}/rectangles/place`)
-      .send({ rectangleId: rect.id, row: raw.rows - 1, col: raw.columns - 1 });
-    if (rect.width > 1 || rect.height > 1) {
-      expect(outOfBoard.status).toBe(422);
-      expect(outOfBoard.body.error.code).toBe('RECTANGLE_OUT_OF_BOARD');
-      expect(JSON.stringify(outOfBoard.body)).not.toMatch(/solution/);
-    }
+    const outOfBoard = await request(app).post(url('/rectangles/place')).send({ row: raw.rows - 1, col: raw.columns - 1, width: 2, height: 1 });
+    expect(outOfBoard.status).toBe(422);
+    expect(outOfBoard.body.error.code).toBe('RECTANGLE_OUT_OF_BOARD');
+    expect(JSON.stringify(outOfBoard.body)).not.toMatch(/solution/);
 
-    const place = await request(app)
-      .post(`/api/games/${gameId}/rectangles/place`)
-      .send({ rectangleId: rect.id, row: rect.solution.row, col: rect.solution.col });
+    const place = await request(app).post(url('/rectangles/place')).send(solutionBox(rect));
     expect(place.status).toBe(200);
-    expect(place.body.data.placement.accepted).toBe(true);
+    expect(place.body.data.placement).toMatchObject({ accepted: true, rectangleId: rect.id });
 
-    const again = await request(app)
-      .post(`/api/games/${gameId}/rectangles/place`)
-      .send({ rectangleId: rect.id, row: rect.solution.row, col: rect.solution.col });
-    expect(again.status).toBe(409);
-    expect(again.body.error.code).toBe('RECTANGLE_ALREADY_LOCKED');
+    const again = await request(app).post(url('/rectangles/place')).send(solutionBox(rect));
+    expect(again.status).toBe(422);
+    expect(again.body.error.code).toBe('RECTANGLE_OVERLAP');
 
-    const check = await request(app).post(`/api/games/${gameId}/check`);
+    const lockedCell = await request(app).post(url('/rectangles/select')).send({ row: rect.solution.row, col: rect.solution.col });
+    expect(lockedCell.status).toBe(409);
+    expect(lockedCell.body.error.code).toBe('RECTANGLE_ALREADY_LOCKED');
+
+    const check = await request(app).post(url('/check'));
     expect(check.body).toMatchObject({ success: true, solved: false });
 
-    const stop = await request(app).post(`/api/games/${gameId}/timer/stop`);
+    const stop = await request(app).post(url('/timer/stop'));
     expect(stop.body).toMatchObject({ success: true, elapsedSeconds: expect.any(Number) });
 
-    const reset = await request(app).post(`/api/games/${gameId}/reset`).send({});
+    const reset = await request(app).post(url('/reset')).send({});
     expect(reset.body.data).toMatchObject({ status: 'created', moves: 0 });
   });
 
-  test('negative coordinates are rejected by validation', async () => {
-    const { app, repository } = setup();
+  test('malformed coordinates are rejected by validation', async () => {
+    const { app } = setup();
     const gameId = await createAndStart(app);
-    const [rect] = repository.raw(gameId).rectangles;
-    const res = await request(app).post(`/api/games/${gameId}/rectangles/place`).send({ rectangleId: rect.id, row: -1, col: 0 });
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('INVALID_POSITION');
+    const negative = await request(app).post(`/api/games/${gameId}/rectangles/place`).send({ row: -1, col: 0, width: 1, height: 1 });
+    expect(negative.status).toBe(400);
+    expect(negative.body.error.code).toBe('INVALID_POSITION');
+    const zeroWidth = await request(app).post(`/api/games/${gameId}/rectangles/place`).send({ row: 0, col: 0, width: 0, height: 1 });
+    expect(zeroWidth.body.error.code).toBe('INVALID_POSITION');
   });
 
   test('solving via REST returns solved from /check', async () => {
     const { app, repository } = setup();
     const gameId = await createAndStart(app);
     for (const rect of repository.raw(gameId).rectangles) {
-      await request(app).post(`/api/games/${gameId}/rectangles/place`).send({ rectangleId: rect.id, row: rect.solution.row, col: rect.solution.col });
+      await request(app).post(`/api/games/${gameId}/rectangles/place`).send(solutionBox(rect));
     }
     const check = await request(app).post(`/api/games/${gameId}/check`);
     expect(check.body).toMatchObject({ success: true, solved: true, message: 'Congratulations! Puzzle solved.' });

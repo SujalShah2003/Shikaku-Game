@@ -56,7 +56,8 @@ const gameSchema = new Schema(
     status: { type: String, enum: Object.values(GAME_STATUS), default: GAME_STATUS.CREATED },
     clues: { type: [clueSchema], default: [] },
     rectangles: { type: [rectangleSchema], default: [] },
-    selectedRectangle: { type: String, default: null },
+    // Anchor cell of the rectangle currently being drawn.
+    selectedRectangle: { type: positionSchema, default: null },
     startedAt: { type: Date, default: null },
     endedAt: { type: Date, default: null },
     elapsedSeconds: { type: Number, default: 0 },

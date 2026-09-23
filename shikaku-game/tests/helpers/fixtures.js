@@ -22,14 +22,17 @@ function createTestService({ seed = 42, clock = createClock() } = {}) {
   return { service, repository, events, clock };
 }
 
+/** The box a player would draw to place `rect` correctly. */
+const solutionBox = (rect) => ({ ...rect.solution });
+
 /** Places every rectangle on its solution slot (uses server-side data). */
 async function solveGame(service, repository, gameId) {
   const { rectangles } = repository.raw(gameId);
   let last;
   for (const rect of rectangles) {
-    last = await service.placeRectangle(gameId, { rectangleId: rect.id, row: rect.solution.row, col: rect.solution.col });
+    last = await service.placeRectangle(gameId, solutionBox(rect));
   }
   return last;
 }
 
-module.exports = { createClock, createTestService, solveGame };
+module.exports = { createClock, createTestService, solveGame, solutionBox };

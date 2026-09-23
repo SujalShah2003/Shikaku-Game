@@ -1,9 +1,9 @@
 /**
- * ui.js — all DOM rendering: board, tray, stats, timer, overlays, toasts, modal.
+ * ui.js — all DOM rendering: board, drawn rectangles, stats, timer, overlays, toasts, modal.
  * Holds no game logic; it renders whatever state game.js hands it.
  */
 
-const HUES = [188, 268, 318, 142, 40, 212, 350, 165, 292, 100];
+const HUES = [195, 250, 320, 150, 35, 215, 350, 170, 280, 95];
 const TOAST_ICONS = { success: '✓', error: '✕', info: 'ℹ' };
 
 const $ = (id) => document.getElementById(id);
@@ -60,9 +60,6 @@ export function createUI() {
     boardSize: $('board-size'),
     statusBadge: $('status-badge'),
     hint: $('placement-hint'),
-    tray: $('tray'),
-    trayCount: $('tray-count'),
-    trayEmpty: $('tray-empty'),
     headerTimer: $('header-timer'),
     headerDifficulty: $('header-difficulty'),
     connection: $('connection'),
@@ -87,7 +84,7 @@ export function createUI() {
   let boardKey = null;
   let lockedIds = new Set();
 
-  function renderBoard(state) {
+  function renderBoard(state, { drawing = false } = {}) {
     const key = `${state.gameId}:${state.rows}x${state.columns}:${state.clues.map((c) => c.id).join(',')}`;
     const isNewPuzzle = key !== boardKey;
     els.board.style.setProperty('--rows', state.rows);
@@ -117,8 +114,8 @@ export function createUI() {
       els.cells.replaceChildren(fragment);
     }
 
-    const locked = state.rectangles.filter((r) => r.locked && r.currentPosition);
-    els.layer.querySelectorAll('.placed-rect').forEach((node) => node.remove());
+    const locked = state.rectangles;
+    els.layer.querySelectorAll('.placed-rect, .anchor').forEach((node) => node.remove());
     locked.forEach((rect) => {
       const node = el('div', 'placed-rect', { 'data-id': rect.id });
       setBoxVars(node, { ...rect.currentPosition, width: rect.width, height: rect.height });
@@ -131,6 +128,14 @@ export function createUI() {
     });
     lockedIds = new Set(locked.map((r) => r.id));
 
+    // Where someone (usually a teammate) has started drawing.
+    const anchor = state.selectedRectangle;
+    if (anchor && !drawing && state.status === 'playing') {
+      const node = el('div', 'anchor', { title: 'A player is drawing here' });
+      setBoxVars(node, { ...anchor, width: 1, height: 1 });
+      els.layer.appendChild(node);
+    }
+
     state.clues.forEach((clue) => {
       const badge = els.cells.querySelector(`[data-clue-id="${clue.id}"]`);
       if (!badge) return;
@@ -138,38 +143,6 @@ export function createUI() {
       badge.dataset.covered = String(Boolean(owner));
       if (owner) badge.style.setProperty('--h', hueFor(owner.id));
     });
-  }
-
-  function renderTray(state, { activeId = null, dragging = false, playable = false } = {}) {
-    const pieces = state.rectangles
-      .filter((r) => !r.locked)
-      .sort((a, b) => b.area - a.area || b.width - a.width || a.id.localeCompare(b.id));
-
-    const fragment = document.createDocumentFragment();
-    pieces.forEach((rect) => {
-      const button = el('button', 'piece', {
-        type: 'button',
-        'data-id': rect.id,
-        'aria-pressed': String(rect.id === activeId),
-        'aria-label': `Rectangle ${rect.width} wide by ${rect.height} tall, area ${rect.area}`,
-      });
-      button.disabled = !playable;
-      if (rect.selected) button.dataset.remoteSelected = 'true';
-      if (dragging && rect.id === activeId) button.dataset.dragging = 'true';
-
-      const shape = el('span', 'piece-shape', { 'aria-hidden': 'true' });
-      shape.style.setProperty('--w', rect.width);
-      shape.style.setProperty('--hgt', rect.height);
-      for (let i = 0; i < rect.area; i += 1) shape.appendChild(document.createElement('span'));
-
-      const label = el('span', 'piece-label', { 'aria-hidden': 'true' });
-      label.innerHTML = `<b>${rect.width}×${rect.height}</b> · ${rect.area}`;
-      button.append(shape, label);
-      fragment.appendChild(button);
-    });
-    els.tray.replaceChildren(fragment);
-    els.trayCount.textContent = `${pieces.length} left`;
-    els.trayEmpty.hidden = pieces.length > 0 || state.rectangles.length === 0;
   }
 
   function renderStats(state) {
@@ -201,9 +174,8 @@ export function createUI() {
     if (radio && document.activeElement?.name !== 'difficulty') radio.checked = true;
   }
 
-  function render(state, trayOptions) {
-    renderBoard(state);
-    renderTray(state, trayOptions);
+  function render(state, options) {
+    renderBoard(state, options);
     renderStats(state);
     renderStatus(state);
   }
@@ -252,7 +224,7 @@ export function createUI() {
   }
 
   function launchConfetti() {
-    const colors = ['#22e4ff', '#9d6bff', '#ff4fd8', '#7dff9b', '#ffc857'];
+    const colors = ['#0ea5c6', '#5b5bf0', '#d63d9a', '#12976a', '#f0a21a'];
     const pieces = Array.from({ length: 36 }, (_, i) => {
       const bit = document.createElement('i');
       bit.style.left = `${Math.random() * 100}%`;
@@ -283,5 +255,5 @@ export function createUI() {
     if (els.modal.open) els.modal.close();
   }
 
-  return { els, render, renderTray, renderTimer, setConnection, setPlayers, setHint, toast, showWin, hideWin };
+  return { els, render, renderTimer, setConnection, setPlayers, setHint, toast, showWin, hideWin };
 }

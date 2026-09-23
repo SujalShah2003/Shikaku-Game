@@ -41,6 +41,11 @@ function resolveBoardSize({ difficulty, rows, columns }, config = GAME_CONFIG) {
   return size;
 }
 
+/** The anchor cell being drawn from; ignores legacy string values from older saved games. */
+function toCell(value) {
+  return value && Number.isInteger(value.row) && Number.isInteger(value.col) ? { row: value.row, col: value.col } : null;
+}
+
 /** The only shape of a game that ever leaves the server: no solution slots, no clue ownership. */
 function toPublicGame(game, now = new Date()) {
   const timer = timerService.getTimerState(game, now);
@@ -51,17 +56,19 @@ function toPublicGame(game, now = new Date()) {
     difficulty: game.difficulty,
     status: game.status,
     clues: game.clues.map(({ id, row, col, value }) => ({ id, row, col, value })),
-    rectangles: game.rectangles.map((r) => ({
-      id: r.id,
-      width: r.width,
-      height: r.height,
-      area: r.area,
-      status: r.status,
-      selected: r.selected,
-      locked: r.locked,
-      currentPosition: r.locked && r.currentPosition ? { row: r.currentPosition.row, col: r.currentPosition.col } : null,
-    })),
-    selectedRectangle: game.selectedRectangle || null,
+    // Only locked rectangles are public: unlocked ones would reveal the solution's shapes.
+    rectangles: game.rectangles
+      .filter((r) => r.locked && r.currentPosition)
+      .map((r) => ({
+        id: r.id,
+        width: r.width,
+        height: r.height,
+        area: r.area,
+        status: r.status,
+        locked: true,
+        currentPosition: { row: r.currentPosition.row, col: r.currentPosition.col },
+      })),
+    selectedRectangle: toCell(game.selectedRectangle),
     moves: game.moves || 0,
     progress: validationService.getProgress(game),
     timer,
@@ -138,10 +145,8 @@ function createGameService({
     if (!timerService.isTimerRunning(game)) throw createError('INVALID_GAME_STATE', 'The game is paused. Resume to keep playing.');
   }
 
-  function findRectangle(game, rectangleId) {
-    const rectangle = game.rectangles.find((r) => r.id === rectangleId);
-    if (!rectangle) throw createError('RECTANGLE_NOT_FOUND');
-    return rectangle;
+  function rectangleAtCell(game, row, col) {
+    return game.rectangles.find((r) => rectangleService.cellInBox(r.solution, row, col)) || null;
   }
 
   function clearSelection(game) {
@@ -208,66 +213,76 @@ function createGameService({
     return publicGame;
   }
 
-  async function selectRectangle(gameId, rectangleId) {
-    const { game, now } = await mutate(gameId, (current) => {
+  /**
+   * The player pressed on a cell to start drawing a rectangle. The anchor cell
+   * is persisted and broadcast so teammates can see where someone is drawing;
+   * server-side, the hidden solution rectangle under it becomes "selected".
+   */
+  async function selectRectangle(gameId, { row, col }) {
+    const { game, result, now } = await mutate(gameId, (current) => {
       assertPlayable(current);
-      const rectangle = findRectangle(current, rectangleId);
-      if (rectangle.locked) throw createError('RECTANGLE_ALREADY_LOCKED');
-      if (rectangle.status === RECTANGLE_STATUS.SELECTED) return { skipSave: true };
+      if (!rectangleService.isPositionOnBoard({ row, col }, current.rows, current.columns)) {
+        throw createError('INVALID_POSITION', 'That cell is not on the board.');
+      }
+      const rectangle = rectangleAtCell(current, row, col);
+      if (rectangle.locked) throw createError('RECTANGLE_ALREADY_LOCKED', 'That cell is already part of a locked rectangle.');
+      const anchor = current.selectedRectangle;
+      if (anchor && anchor.row === row && anchor.col === col) return { skipSave: true };
       clearSelection(current);
       rectangleService.transition(rectangle, RECTANGLE_STATUS.SELECTED);
-      current.selectedRectangle = rectangle.id;
+      current.selectedRectangle = { row, col };
       return {};
     });
     const publicGame = toPublicGame(game, now);
-    logger.info({ gameId, rectangleId }, 'Rectangle selected');
-    emit(GAME_EVENTS.RECTANGLE_SELECTED, gameId, { game: publicGame, rectangleId });
-    emit(GAME_EVENTS.UPDATED, gameId, { game: publicGame });
+    if (!result.skipSave) {
+      logger.info({ gameId, row, col }, 'Rectangle selected');
+      emit(GAME_EVENTS.RECTANGLE_SELECTED, gameId, { game: publicGame, selection: publicGame.selectedRectangle });
+      emit(GAME_EVENTS.UPDATED, gameId, { game: publicGame });
+    }
     return publicGame;
   }
 
   /**
-   * Attempts a placement. Rule violations are a normal game outcome (they count
-   * as a move and are persisted), so they are returned as `placement.accepted =
-   * false` instead of thrown; the REST layer maps them to 422.
+   * Attempts to place a rectangle the player drew ({ row, col, width, height }).
+   * Rule violations are a normal game outcome (they count as a move and are
+   * persisted), so they are returned as `placement.accepted = false` instead of
+   * thrown; the REST layer maps them to 422.
    */
-  async function placeRectangle(gameId, { rectangleId, row, col }) {
-    const position = { row, col };
+  async function placeRectangle(gameId, box) {
+    const { row, col, width, height } = box;
+    const drawn = { row, col, width, height };
     const { game, result, now } = await mutate(gameId, (current, time) => {
       assertPlayable(current);
-      const rectangle = findRectangle(current, rectangleId);
-      if (rectangle.locked) throw createError('RECTANGLE_ALREADY_LOCKED');
-
       current.moves = (current.moves || 0) + 1;
-      if (current.selectedRectangle === rectangle.id) current.selectedRectangle = null;
+      clearSelection(current);
+
+      const verdict = rectangleService.validatePlacement(current, drawn, config);
+      if (!verdict.valid) return { accepted: false, code: verdict.code, message: verdict.message };
+
+      const { rectangle } = verdict;
       rectangleService.transition(rectangle, RECTANGLE_STATUS.PLACED);
-      rectangle.currentPosition = position;
-
-      const verdict = rectangleService.validatePlacement(current, rectangle, position);
-      if (!verdict.valid) {
-        rectangleService.transition(rectangle, RECTANGLE_STATUS.AVAILABLE);
-        rectangle.currentPosition = null;
-        return { accepted: false, code: verdict.code, message: verdict.message };
-      }
-
-      rectangleService.lockRectangle(rectangle, position, verdict.match);
+      rectangleService.lockRectangle(rectangle, drawn);
       const solved = validationService.checkSolved(current).solved;
       if (solved) completeGame(current, time);
-      return { accepted: true, solved };
+      return { accepted: true, solved, rectangleId: rectangle.id };
     });
 
     const publicGame = toPublicGame(game, now);
-    const placement = { rectangleId, position, accepted: result.accepted };
+    const placement = { ...drawn, accepted: result.accepted };
     if (!result.accepted) {
       placement.code = result.code;
       placement.message = result.message;
-      logger.warn({ gameId, rectangleId, position, code: result.code }, 'Invalid rectangle placement');
+      logger.warn({ gameId, box: drawn, code: result.code }, 'Invalid rectangle placement');
     } else {
-      logger.info({ gameId, rectangleId, position }, 'Rectangle locked');
+      placement.rectangleId = result.rectangleId;
+      logger.info({ gameId, rectangleId: result.rectangleId, box: drawn }, 'Rectangle locked');
     }
 
-    emit(GAME_EVENTS.RECTANGLE_MOVED, gameId, { game: publicGame, ...placement });
-    if (result.accepted) emit(GAME_EVENTS.RECTANGLE_LOCKED, gameId, { game: publicGame, rectangleId, position });
+    emit(GAME_EVENTS.RECTANGLE_MOVED, gameId, { game: publicGame, placement });
+    if (result.accepted) {
+      const rectangle = publicGame.rectangles.find((r) => r.id === result.rectangleId);
+      emit(GAME_EVENTS.RECTANGLE_LOCKED, gameId, { game: publicGame, rectangle });
+    }
     emit(GAME_EVENTS.UPDATED, gameId, { game: publicGame });
     if (result.solved) {
       logger.info({ gameId, elapsedSeconds: publicGame.elapsedSeconds, moves: publicGame.moves }, 'Puzzle completed');

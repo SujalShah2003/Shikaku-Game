@@ -67,11 +67,11 @@ function registerGameSocket(io, gameService) {
 
     handle('game:start', socketSchemas.gameOnly, async ({ gameId }) => ok(await gameService.startGame(gameId)));
 
-    handle('rectangle:select', socketSchemas.select, async ({ gameId, rectangleId }) =>
-      ok(await gameService.selectRectangle(gameId, rectangleId)));
+    handle('rectangle:select', socketSchemas.select, async ({ gameId, ...cell }) =>
+      ok(await gameService.selectRectangle(gameId, cell)));
 
-    handle('rectangle:place', socketSchemas.place, async ({ gameId, ...placement }) => {
-      const result = await gameService.placeRectangle(gameId, placement);
+    handle('rectangle:place', socketSchemas.place, async ({ gameId, ...box }) => {
+      const result = await gameService.placeRectangle(gameId, box);
       if (result.placement.accepted) return ok(result);
       const { code, message } = result.placement;
       return { success: false, error: { code, message }, data: result };
