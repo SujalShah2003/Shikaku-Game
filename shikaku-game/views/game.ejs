@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <%- include('partials/header', { title }) %>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"><span class="orb orb-a"></span><span class="orb orb-b"></span><span class="orb orb-c"></span></div>
+  <a class="skip-link" href="#board">Skip to board</a>
+
+  <div class="app">
+    <%- include('partials/game-header') %>
+
+    <main class="layout">
+      <%- include('partials/game-stats') %>
+
+      <section class="board-panel glass" aria-labelledby="board-title">
+        <div class="panel-head">
+          <h2 id="board-title" class="panel-title">Board <span class="muted mono" id="board-size"></span></h2>
+          <span class="badge" id="status-badge" data-status="created">Ready</span>
+        </div>
+
+        <div class="board-stage">
+          <div class="board" id="board" role="grid" tabindex="0" aria-label="Shikaku board" aria-describedby="placement-hint">
+            <div class="board-cells" id="board-cells"></div>
+            <div class="board-layer" id="board-layer" aria-hidden="true"></div>
+          </div>
+
+          <div class="board-overlay" id="board-overlay" data-mode="loading">
+            <div class="overlay-card">
+              <div class="overlay-loading">
+                <span class="spinner" aria-hidden="true"></span>
+                <p>Generating puzzle…</p>
+              </div>
+              <div class="overlay-start">
+                <p class="overlay-title">Ready to solve?</p>
+                <p class="overlay-text">Split the grid into rectangles — each holds one number equal to its area.</p>
+                <button type="button" class="btn btn-primary btn-lg" id="start-btn">▶ Start puzzle</button>
+              </div>
+              <div class="overlay-paused">
+                <p class="overlay-title">Paused</p>
+                <p class="overlay-text">The timer is stopped. The board is hidden while paused.</p>
+                <button type="button" class="btn btn-primary btn-lg" id="resume-btn">▶ Resume</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="hint" id="placement-hint" aria-live="polite">Drag a rectangle from the tray onto the board.</p>
+      </section>
+
+      <section class="tray-panel glass" aria-labelledby="tray-title">
+        <div class="panel-head">
+          <h2 id="tray-title" class="panel-title">Rectangles</h2>
+          <span class="muted mono" id="tray-count">0 left</span>
+        </div>
+        <div class="tray" id="tray" role="toolbar" aria-label="Available rectangles"></div>
+        <p class="tray-empty" id="tray-empty" hidden>All rectangles placed.</p>
+      </section>
+
+      <section class="controls glass" aria-labelledby="controls-title">
+        <h2 id="controls-title" class="panel-title">Controls</h2>
+
+        <fieldset class="difficulty-picker">
+          <legend>Difficulty</legend>
+          <div class="segmented" id="difficulty-options">
+            <% difficulties.forEach(function (d) { %>
+              <label class="segment">
+                <input type="radio" name="difficulty" value="<%= d.key %>">
+                <span><%= d.key.charAt(0).toUpperCase() + d.key.slice(1) %> <small class="mono"><%= d.rows %>×<%= d.columns %></small></span>
+              </label>
+            <% }) %>
+          </div>
+        </fieldset>
+
+        <div class="control-buttons">
+          <button type="button" class="btn btn-primary" id="new-game-btn">✦ New puzzle</button>
+          <button type="button" class="btn btn-ghost" id="pause-btn" disabled>❚❚ Pause</button>
+          <button type="button" class="btn btn-ghost" id="check-btn" disabled>✓ Check</button>
+        </div>
+
+        <details class="how-to">
+          <summary>How to play</summary>
+          <ul>
+            <li>Every number is the <strong>area</strong> of the rectangle that covers it.</li>
+            <li>Each rectangle covers <strong>exactly one</strong> number; together they fill the grid.</li>
+            <li><strong>Drag</strong> a piece onto the board — it snaps to the grid. Or click/tap a piece, then click a cell.</li>
+            <li>Keyboard: focus a piece, press <kbd>Enter</kbd>, move with the <kbd>arrow keys</kbd>, <kbd>Enter</kbd> to place, <kbd>Esc</kbd> to cancel.</li>
+            <li>Correct placements lock in place. Share the link to solve together in real time.</li>
+          </ul>
+        </details>
+      </section>
+    </main>
+  </div>
+
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+  <%- include('partials/game-over-modal') %>
+
+  <script type="application/json" id="app-config"><%- clientConfig %></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/js/game.js"></script>
+</body>
+</html>

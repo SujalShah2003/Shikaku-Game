@@ -1,0 +1,176 @@
+/* ==========================================================================
+   animations.css: keyframes, kept subtle. Disabled for reduced-motion users.
+   ========================================================================== */
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes lock-pop {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.4;
+  }
+  60% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes lock-flash {
+  0% {
+    box-shadow: 0 0 0 0 hsl(var(--h) 100% 65% / 0.8);
+  }
+  100% {
+    box-shadow: 0 0 0 14px hsl(var(--h) 100% 65% / 0), 0 0 16px hsl(var(--h) 100% 60% / 0.35);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+  40%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--dx), 420px, 0) rotate(var(--rot));
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes board-solved {
+  0% {
+    box-shadow: 0 0 0 0 rgba(77, 255, 180, 0.6), var(--shadow);
+  }
+  100% {
+    box-shadow: 0 0 0 18px rgba(77, 255, 180, 0), var(--shadow);
+  }
+}
+
+@keyframes orb-drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(30px, -20px);
+  }
+}
+
+.spinner {
+  animation: spin 0.9s linear infinite;
+}
+
+.placed-rect.just-locked {
+  animation: lock-pop 0.38s var(--ease), lock-flash 0.8s ease-out;
+}
+
+.preview.shake {
+  animation: shake 0.35s ease;
+}
+
+.toast {
+  animation: toast-in 0.25s var(--ease);
+}
+
+.toast.leaving {
+  animation: toast-out 0.25s ease forwards;
+}
+
+.modal[open] {
+  animation: modal-in 0.4s var(--ease);
+}
+
+.confetti i {
+  animation: confetti-fall var(--dur) cubic-bezier(0.25, 0.6, 0.5, 1) var(--delay) forwards;
+}
+
+.chip-connection[data-state='connecting'] .dot,
+.chip-connection[data-state='reconnecting'] .dot {
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+.board.solved {
+  animation: board-solved 1.2s ease-out;
+}
+
+.orb {
+  animation: orb-drift 18s ease-in-out infinite;
+}
+
+.orb-b {
+  animation-duration: 24s;
+  animation-direction: reverse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .confetti {
+    display: none;
+  }
+}

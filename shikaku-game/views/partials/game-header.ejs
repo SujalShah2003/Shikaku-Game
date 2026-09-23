@@ -1,0 +1,34 @@
+<header class="topbar glass">
+  <div class="brand">
+    <img src="/assets/icons/logo.svg" alt="" class="brand-mark" width="40" height="40">
+    <div class="brand-text">
+      <h1 class="brand-title">SHIKAKU</h1>
+      <p class="brand-sub">Grid Puzzle</p>
+    </div>
+  </div>
+
+  <div class="topbar-meta">
+    <div class="chip chip-timer" title="Elapsed time">
+      <span aria-hidden="true">⚡</span>
+      <span class="sr-only">Elapsed time</span>
+      <time id="header-timer" class="mono">00:00</time>
+    </div>
+    <div class="chip chip-difficulty" id="header-difficulty" title="Difficulty">Easy</div>
+    <div class="chip chip-connection" id="connection" data-state="connecting" role="status" aria-live="polite">
+      <span class="dot" aria-hidden="true"></span>
+      <span id="connection-label">Connecting…</span>
+    </div>
+    <div class="chip chip-players" id="players" title="Players viewing this game" hidden>
+      <span aria-hidden="true">👥</span> <span id="players-count">1</span>
+    </div>
+  </div>
+
+  <div class="topbar-actions">
+    <button type="button" class="btn btn-ghost" id="share-btn" aria-label="Copy a link to this game">
+      <span aria-hidden="true">⧉</span><span class="btn-label">Share</span>
+    </button>
+    <button type="button" class="btn btn-primary" id="reset-btn" aria-label="Reset with a brand-new puzzle">
+      <span aria-hidden="true">↻</span><span class="btn-label">Reset</span>
+    </button>
+  </div>
+</header>

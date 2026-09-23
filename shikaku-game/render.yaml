@@ -1,0 +1,16 @@
+# Render Blueprint — a single Node web service serving EJS, REST and Socket.IO.
+services:
+  - type: web
+    name: shikaku-game
+    runtime: node
+    plan: free
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false # set to your MongoDB Atlas connection string in the dashboard
+      - key: CLIENT_URL
+        sync: false # e.g. https://shikaku-game.onrender.com

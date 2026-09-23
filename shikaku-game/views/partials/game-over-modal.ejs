@@ -1,0 +1,17 @@
+<dialog class="modal" id="win-modal" aria-labelledby="win-title" aria-describedby="win-summary">
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
+  <div class="modal-body">
+    <p class="modal-kicker"><span aria-hidden="true">✨</span> Puzzle complete <span aria-hidden="true">✨</span></p>
+    <h2 id="win-title" class="modal-title">Congratulations!</h2>
+    <p class="modal-time mono" id="win-time">00:00</p>
+    <div class="modal-stats" id="win-summary">
+      <div><span class="mono" id="win-rectangles">0 / 0</span><small>Rectangles</small></div>
+      <div><span class="mono" id="win-moves">0</span><small>Moves</small></div>
+      <div><span id="win-difficulty">Easy</span><small>Difficulty</small></div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-primary btn-lg" id="play-again-btn">Play again</button>
+      <button type="button" class="btn btn-ghost" id="close-modal-btn">View board</button>
+    </div>
+  </div>
+</dialog>
