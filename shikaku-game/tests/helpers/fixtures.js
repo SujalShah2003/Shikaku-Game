@@ -1,7 +1,7 @@
 'use strict';
 
 const { EventEmitter } = require('node:events');
-const { createGameService } = require('../../src/services/game.service');
+const { createGameService } = require('../../src/services/game');
 const { createInMemoryRepository } = require('./in-memory-repository');
 const { createSeededRandom } = require('../../src/utils/random');
 

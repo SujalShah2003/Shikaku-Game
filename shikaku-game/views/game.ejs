@@ -4,7 +4,6 @@
   <%- include('partials/header', { title }) %>
 </head>
 <body>
-  <div class="backdrop" aria-hidden="true"><span class="orb orb-a"></span><span class="orb orb-b"></span><span class="orb orb-c"></span></div>
   <a class="skip-link" href="#board">Skip to board</a>
 
   <div class="app">
@@ -13,9 +12,9 @@
     <main class="layout">
       <%- include('partials/game-stats') %>
 
-      <section class="board-panel glass" aria-labelledby="board-title">
+      <section class="board-panel panel" aria-labelledby="board-title">
         <div class="panel-head">
-          <h2 id="board-title" class="panel-title">Board <span class="muted mono" id="board-size"></span></h2>
+          <h2 id="board-title" class="panel-title">Puzzle <span class="muted mono" id="board-size"></span></h2>
           <span class="badge" id="status-badge" data-status="created">Ready</span>
         </div>
 
@@ -29,17 +28,17 @@
             <div class="overlay-card">
               <div class="overlay-loading">
                 <span class="spinner" aria-hidden="true"></span>
-                <p>Generating puzzle…</p>
+                <p>Setting up a puzzle…</p>
               </div>
               <div class="overlay-start">
-                <p class="overlay-title">Ready to solve?</p>
-                <p class="overlay-text">Split the grid into rectangles — each holds one number equal to its area.</p>
-                <button type="button" class="btn btn-primary btn-lg" id="start-btn">▶ Start puzzle</button>
+                <p class="overlay-title">A fresh grid</p>
+                <p class="overlay-text">Cut it into rectangles. Each one holds a single number, and that number is its area.</p>
+                <button type="button" class="btn btn-primary btn-lg" id="start-btn">Start the clock</button>
               </div>
               <div class="overlay-paused">
                 <p class="overlay-title">Paused</p>
-                <p class="overlay-text">The timer is stopped. The board is hidden while paused.</p>
-                <button type="button" class="btn btn-primary btn-lg" id="resume-btn">▶ Resume</button>
+                <p class="overlay-text">The clock is stopped. The grid stays hidden until you come back.</p>
+                <button type="button" class="btn btn-primary btn-lg" id="resume-btn">Resume</button>
               </div>
             </div>
           </div>
@@ -48,8 +47,8 @@
         <p class="hint" id="placement-hint" aria-live="polite">Press on a cell and drag to draw a rectangle.</p>
       </section>
 
-      <section class="controls glass" aria-labelledby="controls-title">
-        <h2 id="controls-title" class="panel-title">Controls</h2>
+      <section class="controls panel" aria-labelledby="controls-title">
+        <h2 id="controls-title" class="panel-title">Game</h2>
 
         <fieldset class="difficulty-picker">
           <legend>Difficulty</legend>
@@ -64,46 +63,16 @@
         </fieldset>
 
         <div class="control-buttons">
-          <button type="button" class="btn btn-primary" id="new-game-btn">✦ New puzzle</button>
-          <button type="button" class="btn btn-ghost" id="pause-btn" disabled>❚❚ Pause</button>
-          <button type="button" class="btn btn-ghost" id="check-btn" disabled>✓ Check</button>
+          <button type="button" class="btn btn-primary" id="new-game-btn">New puzzle</button>
+          <button type="button" class="btn" id="pause-btn" disabled>Pause</button>
         </div>
-
-        <details class="how-to">
-          <summary>How to play</summary>
-
-          <h3>Goal</h3>
-          <p>Divide the whole grid into rectangles. Each number tells you the <strong>area</strong> of the rectangle that contains it.</p>
-
-          <h3>Rules</h3>
-          <ul>
-            <li>Every rectangle contains <strong>exactly one</strong> number.</li>
-            <li>Its area (width × height) equals that number: a <em>6</em> can be 2×3 or 3×2.</li>
-            <li>Rectangles are at most <strong>3×3</strong>, so a <em>4</em> must be 2×2 (1×4 is too long).</li>
-            <li>Rectangles never overlap, and together they cover <strong>every cell</strong>.</li>
-          </ul>
-
-          <h3>Controls</h3>
-          <ul>
-            <li><strong>Draw:</strong> press on a corner cell, drag to the opposite corner, and release. A label shows the size and whether it fits.</li>
-            <li><strong>Single cell:</strong> click a <em>1</em> to place a 1×1. Clicking an empty cell does nothing.</li>
-            <li><strong>Keyboard:</strong> focus the board, move with the <kbd>arrow keys</kbd>, press <kbd>Enter</kbd> to start, use the arrows to size it, <kbd>Enter</kbd> to place, <kbd>Esc</kbd> to cancel.</li>
-          </ul>
-
-          <h3>Good to know</h3>
-          <ul>
-            <li>Correct rectangles <strong>lock</strong> and can't be changed. Wrong ones are rejected with the reason.</li>
-            <li>Every rectangle you place counts as a move, right or wrong. Aim for as few as possible.</li>
-            <li><strong>Pause</strong> stops the timer and hides the board. <strong>Check</strong> tells you how far you are.</li>
-            <li><strong>Share</strong> copies a link, so friends can solve the same puzzle with you in real time.</li>
-          </ul>
-        </details>
       </section>
     </main>
   </div>
 
   <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
   <%- include('partials/game-over-modal') %>
+  <%- include('partials/help-modal') %>
 
   <script type="application/json" id="app-config"><%- clientConfig %></script>
   <script src="/socket.io/socket.io.js"></script>

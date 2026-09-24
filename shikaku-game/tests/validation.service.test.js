@@ -1,6 +1,6 @@
 'use strict';
 
-const { checkSolved, isValidPartition, analyzePartition, getProgress } = require('../src/services/validation.service');
+const { checkSolved, isValidPartition, analyzePartition, getProgress } = require('../src/services/validation');
 
 // 2×3 board:  [a a b]
 //             [c c b]

@@ -1,34 +1,38 @@
-<header class="topbar glass">
+<header class="topbar">
   <div class="brand">
-    <img src="/assets/icons/logo.svg" alt="" class="brand-mark" width="40" height="40">
+    <img src="/assets/icons/logo.svg" alt="" class="brand-mark" width="36" height="36">
     <div class="brand-text">
-      <h1 class="brand-title">SHIKAKU</h1>
-      <p class="brand-sub">Grid Puzzle</p>
+      <h1 class="brand-title">Shikaku</h1>
+      <p class="brand-sub">divide the grid</p>
     </div>
   </div>
 
   <div class="topbar-meta">
-    <div class="chip chip-timer" title="Elapsed time">
-      <span aria-hidden="true">⚡</span>
+    <div class="meta-item meta-timer" title="Elapsed time">
       <span class="sr-only">Elapsed time</span>
       <time id="header-timer" class="mono">00:00</time>
     </div>
-    <div class="chip chip-difficulty" id="header-difficulty" title="Difficulty">Easy</div>
-    <div class="chip chip-connection" id="connection" data-state="connecting" role="status" aria-live="polite">
+    <div class="meta-item meta-difficulty" id="header-difficulty" title="Difficulty">Easy</div>
+    <div class="meta-item meta-connection" id="connection" data-state="connecting" role="status" aria-live="polite">
       <span class="dot" aria-hidden="true"></span>
       <span id="connection-label">Connecting…</span>
     </div>
-    <div class="chip chip-players" id="players" title="Players viewing this game" hidden>
-      <span aria-hidden="true">👥</span> <span id="players-count">1</span>
+    <div class="meta-item meta-players" id="players" title="Players viewing this game" hidden>
+      <span id="players-count">1</span> playing
     </div>
   </div>
 
   <div class="topbar-actions">
-    <button type="button" class="btn btn-ghost" id="share-btn" aria-label="Copy a link to this game">
-      <span aria-hidden="true">⧉</span><span class="btn-label">Share</span>
+    <button type="button" class="btn" id="share-btn" aria-label="Copy a link to this game">
+      <span class="btn-icon" aria-hidden="true">⇪</span><span class="btn-label">Share</span>
     </button>
-    <button type="button" class="btn btn-primary" id="reset-btn" aria-label="Reset with a brand-new puzzle">
-      <span aria-hidden="true">↻</span><span class="btn-label">Reset</span>
+    <button type="button" class="btn" id="reset-btn" aria-label="Reset with a brand-new puzzle">
+      <span class="btn-icon" aria-hidden="true">↺</span><span class="btn-label">Reset</span>
+    </button>
+    <button type="button" class="btn btn-info" id="help-btn" aria-label="How to play" aria-haspopup="dialog" title="How to play">
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6">
+        <circle cx="10" cy="10" r="8.2"/><path d="M10 9v5" stroke-linecap="round"/><circle cx="10" cy="6.2" r="0.6" fill="currentColor"/>
+      </svg>
     </button>
   </div>
 </header>

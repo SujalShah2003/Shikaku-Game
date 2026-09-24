@@ -1,6 +1,6 @@
 'use strict';
 
-const timer = require('../src/services/timer.service');
+const timer = require('../src/services/timer');
 
 const at = (seconds) => new Date(Date.UTC(2026, 0, 1, 10, 0, seconds));
 

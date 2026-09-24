@@ -143,7 +143,7 @@ export function createDragDrop({ board, layer, getState, limits, isPlayable, onS
       const result = await onPlace(box);
       if (result && result.accepted) {
         cancel({ silent: true });
-        setHint('Locked in! Draw the next rectangle.');
+        setHint('That one fits. On to the next.');
       } else {
         preview.dataset.valid = 'false';
         tag.dataset.valid = 'false';

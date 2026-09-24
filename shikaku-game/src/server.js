@@ -6,7 +6,7 @@ const env = require('./config/env');
 const logger = require('./utils/logger');
 const { connectDatabase, disconnectDatabase } = require('./config/database');
 const gameRepository = require('./repositories/game.repository');
-const { createGameService } = require('./services/game.service');
+const { createGameService } = require('./services/game');
 const { createApp } = require('./app');
 const { registerGameSocket } = require('./socket/game.socket');
 

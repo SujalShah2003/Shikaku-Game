@@ -1,8 +1,8 @@
 'use strict';
 
-const { generatePuzzle, generatePartition, countSolutions } = require('../src/services/puzzle.service');
-const { isValidPartition, analyzePartition } = require('../src/services/validation.service');
-const { getCluesInside, isInsideBoard, boxesOverlap } = require('../src/services/rectangle.service');
+const { generatePuzzle, generatePartition, countSolutions } = require('../src/services/puzzle');
+const { isValidPartition, analyzePartition } = require('../src/services/validation');
+const { getCluesInside, isInsideBoard, boxesOverlap } = require('../src/services/rectangle');
 const { GAME_CONFIG, DIFFICULTIES } = require('../src/config/game.config');
 const { createSeededRandom } = require('../src/utils/random');
 

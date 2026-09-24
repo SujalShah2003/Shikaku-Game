@@ -1,6 +1,6 @@
 'use strict';
 
-const { GAME_EVENTS } = require('../services/game.service');
+const { GAME_EVENTS } = require('../services/game');
 const { validate, socketSchemas } = require('../validators/game.validator');
 const { AppError } = require('../utils/errors');
 const logger = require('../utils/logger');

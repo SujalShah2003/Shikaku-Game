@@ -3,7 +3,7 @@
  * Holds no game logic; it renders whatever state game.js hands it.
  */
 
-const HUES = [195, 250, 320, 150, 35, 215, 350, 170, 280, 95];
+const HUES = [14, 40, 95, 150, 190, 215, 260, 330, 70, 172];
 const TOAST_ICONS = { success: '✓', error: '✕', info: 'ℹ' };
 
 const $ = (id) => document.getElementById(id);
@@ -75,10 +75,8 @@ export function createUI() {
     progressFill: $('progress-fill'),
     progressText: $('progress-text'),
     pauseBtn: $('pause-btn'),
-    checkBtn: $('check-btn'),
     toasts: $('toasts'),
     modal: $('win-modal'),
-    confetti: $('confetti'),
   };
 
   let boardKey = null;
@@ -167,8 +165,7 @@ export function createUI() {
     els.statusBadge.dataset.status = mode === 'paused' ? 'paused' : state.status;
 
     els.pauseBtn.disabled = state.status !== 'playing';
-    els.pauseBtn.textContent = running || state.status !== 'playing' ? '❚❚ Pause' : '▶ Resume';
-    els.checkBtn.disabled = state.status !== 'playing';
+    els.pauseBtn.textContent = running || state.status !== 'playing' ? 'Pause' : 'Resume';
 
     const radio = document.querySelector(`input[name="difficulty"][value="${state.difficulty}"]`);
     if (radio && document.activeElement?.name !== 'difficulty') radio.checked = true;
@@ -190,7 +187,7 @@ export function createUI() {
     connected: 'Connected',
     connecting: 'Connecting…',
     reconnecting: 'Reconnecting…',
-    offline: 'Offline — using HTTP',
+    offline: 'Offline (HTTP fallback)',
   };
 
   function setConnection(status) {
@@ -223,30 +220,11 @@ export function createUI() {
     }, duration);
   }
 
-  function launchConfetti() {
-    const colors = ['#0ea5c6', '#5b5bf0', '#d63d9a', '#12976a', '#f0a21a'];
-    const pieces = Array.from({ length: 36 }, (_, i) => {
-      const bit = document.createElement('i');
-      bit.style.left = `${Math.random() * 100}%`;
-      bit.style.background = colors[i % colors.length];
-      bit.style.setProperty('--dx', `${(Math.random() - 0.5) * 160}px`);
-      bit.style.setProperty('--rot', `${(Math.random() - 0.5) * 720}deg`);
-      bit.style.setProperty('--dur', `${1.6 + Math.random() * 1.2}s`);
-      bit.style.setProperty('--delay', `${Math.random() * 0.4}s`);
-      return bit;
-    });
-    els.confetti.replaceChildren(...pieces);
-  }
-
   function showWin(state) {
     $('win-time').textContent = formatTime(state.elapsedSeconds);
     $('win-rectangles').textContent = `${state.progress.locked} / ${state.progress.total}`;
     $('win-moves').textContent = String(state.moves);
     $('win-difficulty').textContent = capitalize(state.difficulty);
-    els.board.classList.remove('solved');
-    void els.board.offsetWidth; // restart the solved animation
-    els.board.classList.add('solved');
-    launchConfetti();
     if (!els.modal.open) els.modal.showModal();
     $('play-again-btn').focus();
   }

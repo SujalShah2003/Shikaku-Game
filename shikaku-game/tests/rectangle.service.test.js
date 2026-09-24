@@ -1,6 +1,6 @@
 'use strict';
 
-const rectangleService = require('../src/services/rectangle.service');
+const rectangleService = require('../src/services/rectangle');
 const { RECTANGLE_STATUS } = require('../src/config/game.config');
 
 // Solution layout (3×3):

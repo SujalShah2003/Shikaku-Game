@@ -1,0 +1,33 @@
+<dialog class="modal help-modal" id="help-modal" aria-labelledby="help-title">
+  <div class="help-head">
+    <h2 id="help-title" class="modal-title">How to play</h2>
+    <button type="button" class="btn btn-close" id="close-help-btn" aria-label="Close">×</button>
+  </div>
+  <div class="help-body">
+    <h3>Goal</h3>
+    <p>Divide the whole grid into rectangles. Each number tells you the <strong>area</strong> of the rectangle that contains it.</p>
+
+    <h3>Rules</h3>
+    <ul>
+      <li>Every rectangle contains <strong>exactly one</strong> number.</li>
+      <li>Its area (width × height) equals that number: a <em>6</em> can be 2×3 or 3×2.</li>
+      <li>Rectangles are at most <strong>3×3</strong>, so a <em>4</em> must be 2×2 (1×4 is too long).</li>
+      <li>Rectangles never overlap, and together they cover <strong>every cell</strong>.</li>
+    </ul>
+
+    <h3>Controls</h3>
+    <ul>
+      <li><strong>Draw:</strong> press on a corner cell, drag to the opposite corner, and release. A label shows the size and whether it fits.</li>
+      <li><strong>Single cell:</strong> click a <em>1</em> to place a 1×1. Clicking an empty cell does nothing.</li>
+      <li><strong>Keyboard:</strong> focus the board, move with the <kbd>arrow keys</kbd>, press <kbd>Enter</kbd> to start, use the arrows to size it, <kbd>Enter</kbd> to place, <kbd>Esc</kbd> to cancel.</li>
+    </ul>
+
+    <h3>Good to know</h3>
+    <ul>
+      <li>Correct rectangles <strong>lock</strong> and can't be changed. Wrong ones are rejected with the reason.</li>
+      <li>Every rectangle you place counts as a move, right or wrong. Aim for as few as possible.</li>
+      <li><strong>Pause</strong> stops the timer and hides the board. The puzzle finishes by itself once the last rectangle locks.</li>
+      <li><strong>Share</strong> copies a link, so friends can solve the same puzzle with you in real time.</li>
+    </ul>
+  </div>
+</dialog>

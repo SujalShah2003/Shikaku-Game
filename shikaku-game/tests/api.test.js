@@ -120,7 +120,7 @@ describe('REST API', () => {
 
     const page = await request(app).get('/');
     expect(page.status).toBe(200);
-    expect(page.text).toContain('SHIKAKU');
+    expect(page.text).toContain('Shikaku');
     expect(page.text).toContain('id="board"');
 
     expect((await request(app).get('/api/nope')).body.error.code).toBe('ROUTE_NOT_FOUND');

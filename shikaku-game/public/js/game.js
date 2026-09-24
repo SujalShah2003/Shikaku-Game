@@ -133,11 +133,6 @@ const actions = {
     }
     return { accepted: true };
   },
-  async check() {
-    const response = await send('game:check', {}, { path: gamePath('/check') });
-    if (!response.success) return reportError(response);
-    return ui.toast(response.message, response.solved ? 'success' : 'info');
-  },
   async reset(difficulty) {
     const body = difficulty ? { difficulty } : {};
     const response = await send('game:reset', body, { path: gamePath('/reset'), body });
@@ -223,7 +218,6 @@ function bindControls() {
   document.getElementById('start-btn').addEventListener('click', actions.start);
   document.getElementById('resume-btn').addEventListener('click', actions.start);
   document.getElementById('pause-btn').addEventListener('click', () => (isPlayable() ? actions.pause() : actions.start()));
-  document.getElementById('check-btn').addEventListener('click', actions.check);
 
   const confirmReset = () => !state || state.moves === 0 || state.status === 'completed' || window.confirm('Discard this puzzle and generate a new one?');
 
@@ -237,6 +231,14 @@ function bindControls() {
 
   document.getElementById('play-again-btn').addEventListener('click', () => actions.reset());
   document.getElementById('close-modal-btn').addEventListener('click', ui.hideWin);
+
+  const helpModal = document.getElementById('help-modal');
+  document.getElementById('help-btn').addEventListener('click', () => helpModal.showModal());
+  document.getElementById('close-help-btn').addEventListener('click', () => helpModal.close());
+  // A click on the backdrop lands on the dialog element itself.
+  helpModal.addEventListener('click', (event) => {
+    if (event.target === helpModal) helpModal.close();
+  });
 
   document.getElementById('share-btn').addEventListener('click', async () => {
     try {

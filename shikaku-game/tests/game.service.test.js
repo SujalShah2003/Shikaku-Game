@@ -1,7 +1,7 @@
 'use strict';
 
 const { createTestService, solveGame, solutionBox } = require('./helpers/fixtures');
-const { GAME_EVENTS } = require('../src/services/game.service');
+const { GAME_EVENTS } = require('../src/services/game');
 
 const expectAppError = (code) => expect.objectContaining({ code });
 
